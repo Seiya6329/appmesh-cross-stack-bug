@@ -14,8 +14,8 @@ const infra = new InfrastructureStack(app, 'InfrastructureStack', {
 const svc = new MeshedServiceStack(app, 'MeshedServiceStack', {
     vpc: infra.vpc,
     cluster: infra.cluster,
-    mesh: infra.mesh,
     serviceName: "echo",
     serviceImage: ecs.ContainerImage.fromRegistry("hashicorp/http-echo"),
-    containerPort: 5678
-  })
+    containerPort: 5678,
+    MeshName: "cdkbug",
+})

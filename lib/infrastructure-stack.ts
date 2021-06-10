@@ -12,7 +12,7 @@ interface InfrastructureStackProps extends cdk.StackProps {
 export class InfrastructureStack extends cdk.Stack {
   public readonly vpc: ec2.Vpc;
   public readonly cluster: ecs.Cluster;
-  public readonly mesh: appmesh.Mesh;
+  // public readonly mesh: appmesh.Mesh;
 
   constructor(scope: cdk.Construct, id: string, props: InfrastructureStackProps) {
     super(scope, id, props);
@@ -28,11 +28,6 @@ export class InfrastructureStack extends cdk.Stack {
         type: servicediscovery.NamespaceType.DNS_PRIVATE,
         vpc: this.vpc
       }
-    });
-
-    this.mesh = new appmesh.Mesh(this, "Mesh", {
-      meshName: props.MeshName,
-      egressFilter: appmesh.MeshFilterType.DROP_ALL
     });
   }
 }

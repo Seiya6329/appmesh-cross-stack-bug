@@ -6,14 +6,15 @@ import * as iam from '@aws-cdk/aws-iam';
 import * as servicediscovery from '@aws-cdk/aws-servicediscovery';
 import * as appmesh from '@aws-cdk/aws-appmesh';
 import {Duration} from "@aws-cdk/aws-applicationautoscaling/node_modules/@aws-cdk/core";
+import {Service} from "@aws-cdk/aws-servicediscovery";
 
 interface MeshedServiceStackProps extends cdk.StackProps {
   vpc: ec2.IVpc,
   cluster: ecs.ICluster,
-  mesh: appmesh.IMesh,
   serviceName: string,
   serviceImage: ecs.ContainerImage,
-  containerPort: number
+  containerPort: number,
+  MeshName: "cdkbug"
 }
 
 export class MeshedServiceStack extends cdk.Stack {
@@ -44,7 +45,7 @@ export class MeshedServiceStack extends cdk.Stack {
       image: ecs.ContainerImage.fromEcrRepository(ecr.Repository.fromRepositoryArn(this, "aws-appmesh-envoy", "arn:aws:ecr:us-east-1:840364872350:repository/aws-appmesh-envoy"), "v1.15.0.0-prod"),
       essential: true,
       environment: {
-        APPMESH_VIRTUAL_NODE_NAME: `mesh/${props.mesh.meshName}/virtualNode/${props.serviceName}`,
+        APPMESH_VIRTUAL_NODE_NAME: `mesh/${props.MeshName}/virtualNode/${props.serviceName}`,
         AWS_REGION: cdk.Stack.of(this).region
       },
       healthCheck: {
@@ -100,21 +101,23 @@ export class MeshedServiceStack extends cdk.Stack {
         name: props.serviceName
       }
     });
+    git 
+    const mesh = new appmesh.Mesh(this, "Mesh", {
+      meshName: props.MeshName,
+      egressFilter: appmesh.MeshFilterType.DROP_ALL
+    });
 
-    const cloudMapService = service.cloudMapService;
-
-
-    var virtualNode = props.mesh.addVirtualNode("${props.serviceName}-vn", {
+    var virtualNode = mesh.addVirtualNode("${props.serviceName}-vn", {
       virtualNodeName: props.serviceName,
-      serviceDiscovery: cloudMapService? appmesh.ServiceDiscovery.cloudMap({
-        service: cloudMapService,
-      }): undefined,
+      serviceDiscovery: service.cloudMapService? appmesh.ServiceDiscovery.cloudMap({
+        service: service.cloudMapService
+        }): undefined,
       listeners: [appmesh.VirtualNodeListener.http({
         port: appContainer.containerPort,
       })],
     });
 
-    var virtualRouter = props.mesh.addVirtualRouter("${props.serviceName}-vr", {
+    var virtualRouter = mesh.addVirtualRouter("${props.serviceName}-vr", {
       virtualRouterName: "${props.serviceName}-vr",
       listeners: [appmesh.VirtualRouterListener.http(appContainer.containerPort)],
     });

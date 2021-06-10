@@ -5,6 +5,7 @@ import * as ecr from '@aws-cdk/aws-ecr';
 import * as iam from '@aws-cdk/aws-iam';
 import * as servicediscovery from '@aws-cdk/aws-servicediscovery';
 import * as appmesh from '@aws-cdk/aws-appmesh';
+import {Duration} from "@aws-cdk/aws-applicationautoscaling/node_modules/@aws-cdk/core";
 
 interface MeshedServiceStackProps extends cdk.StackProps {
   vpc: ec2.IVpc,
@@ -51,9 +52,9 @@ export class MeshedServiceStack extends cdk.Stack {
           'CMD-SHELL',
           'curl -s http://localhost:9901/server_info | grep state | grep -q LIVE'
         ],
-        startPeriod: cdk.Duration.seconds(10),
-        interval: cdk.Duration.seconds(5),
-        timeout: cdk.Duration.seconds(2),
+        startPeriod: Duration.seconds(10),
+        interval: Duration.seconds(5),
+        timeout: Duration.seconds(2),
         retries: 3
       },
       memoryLimitMiB: 128,
@@ -94,40 +95,40 @@ export class MeshedServiceStack extends cdk.Stack {
       securityGroup: securityGroup,
       cloudMapOptions: {
         dnsRecordType: servicediscovery.DnsRecordType.A,
-        dnsTtl: cdk.Duration.seconds(10),
+        dnsTtl: Duration.seconds(10),
         failureThreshold: 2,
         name: props.serviceName
       }
     });
 
-    // var virtualNode = props.mesh.addVirtualNode("${props.serviceName}-vn", {
-    //   virtualNodeName: props.serviceName,
-    //   cloudMapService: service.cloudMapService,
-    //   listener: {
-    //     portMapping: {
-    //       port: appContainer.containerPort,
-    //       protocol: appmesh.Protocol.HTTP
-    //     }
-    //   }
-    // });
+    const cloudMapService = service.cloudMapService;
 
-    // var virtualRouter = props.mesh.addVirtualRouter("${props.serviceName}-vr", {
-    //   virtualRouterName: "${props.serviceName}-vr",
-    //   listener: {
-    //     portMapping: {
-    //       port: appContainer.containerPort,
-    //       protocol: appmesh.Protocol.HTTP
-    //     }
-    //   }
-    // });
 
-    // var defaultRoute = virtualRouter.addRoute("${props.serviceName}-vr-route-default", {
-    //   routeName: "default",
-    //   routeType: appmesh.RouteType.HTTP,
-    //   routeTargets: [{
-    //     virtualNode: virtualNode,
-    //     weight: 100
-    //   }]
-    // });
+    var virtualNode = props.mesh.addVirtualNode("${props.serviceName}-vn", {
+      virtualNodeName: props.serviceName,
+      serviceDiscovery: cloudMapService? appmesh.ServiceDiscovery.cloudMap({
+        service: cloudMapService,
+      }): undefined,
+      listeners: [appmesh.VirtualNodeListener.http({
+        port: appContainer.containerPort,
+      })],
+    });
+
+    var virtualRouter = props.mesh.addVirtualRouter("${props.serviceName}-vr", {
+      virtualRouterName: "${props.serviceName}-vr",
+      listeners: [appmesh.VirtualRouterListener.http(appContainer.containerPort)],
+    });
+
+    var defaultRoute = virtualRouter.addRoute("${props.serviceName}-vr-route-default", {
+      routeName: "default",
+      routeSpec: appmesh.RouteSpec.http({
+        weightedTargets:[
+          {
+            virtualNode: virtualNode,
+            weight: 100
+          },
+        ],
+      }),
+    });
   }
 }

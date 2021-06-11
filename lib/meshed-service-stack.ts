@@ -6,6 +6,7 @@ import * as iam from '@aws-cdk/aws-iam';
 import * as servicediscovery from '@aws-cdk/aws-servicediscovery';
 import * as appmesh from '@aws-cdk/aws-appmesh';
 import {Duration} from "@aws-cdk/aws-applicationautoscaling/node_modules/@aws-cdk/core";
+import {VirtualNode, VirtualRouter} from "@aws-cdk/aws-appmesh";
 
 interface MeshedServiceStackProps extends cdk.StackProps {
   vpc: ec2.IVpc,
@@ -103,8 +104,8 @@ export class MeshedServiceStack extends cdk.Stack {
 
     const cloudMapService = service.cloudMapService;
 
-
-    var virtualNode = props.mesh.addVirtualNode("${props.serviceName}-vn", {
+    var virtualNode = new VirtualNode(this, 'testVN', {
+      mesh: props.mesh,
       virtualNodeName: props.serviceName,
       serviceDiscovery: cloudMapService? appmesh.ServiceDiscovery.cloudMap({
         service: cloudMapService,
@@ -114,10 +115,26 @@ export class MeshedServiceStack extends cdk.Stack {
       })],
     });
 
-    var virtualRouter = props.mesh.addVirtualRouter("${props.serviceName}-vr", {
+    // var virtualNode = props.mesh.addVirtualNode("${props.serviceName}-vn", {
+    //   virtualNodeName: props.serviceName,
+    //   serviceDiscovery: cloudMapService? appmesh.ServiceDiscovery.cloudMap({
+    //     service: cloudMapService,
+    //   }): undefined,
+    //   listeners: [appmesh.VirtualNodeListener.http({
+    //     port: appContainer.containerPort,
+    //   })],
+    // });
+
+    var virtualRouter = new VirtualRouter(this, 'testVR', {
+      mesh: props.mesh,
       virtualRouterName: "${props.serviceName}-vr",
       listeners: [appmesh.VirtualRouterListener.http(appContainer.containerPort)],
     });
+
+    // var virtualRouter = props.mesh.addVirtualRouter("${props.serviceName}-vr", {
+    //   virtualRouterName: "${props.serviceName}-vr",
+    //   listeners: [appmesh.VirtualRouterListener.http(appContainer.containerPort)],
+    // });
 
     var defaultRoute = virtualRouter.addRoute("${props.serviceName}-vr-route-default", {
       routeName: "default",

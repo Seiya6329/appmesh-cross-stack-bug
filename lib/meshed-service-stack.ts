@@ -5,7 +5,7 @@ import * as ecr from '@aws-cdk/aws-ecr';
 import * as iam from '@aws-cdk/aws-iam';
 import * as servicediscovery from '@aws-cdk/aws-servicediscovery';
 import * as appmesh from '@aws-cdk/aws-appmesh';
-import {Duration} from "@aws-cdk/aws-applicationautoscaling/node_modules/@aws-cdk/core";
+import {Duration} from "@aws-cdk/core";
 
 interface MeshedServiceStackProps extends cdk.StackProps {
   vpc: ec2.IVpc,
@@ -102,7 +102,6 @@ export class MeshedServiceStack extends cdk.Stack {
     });
 
     const cloudMapService = service.cloudMapService;
-
 
     var virtualNode = props.mesh.addVirtualNode("${props.serviceName}-vn", {
       virtualNodeName: props.serviceName,

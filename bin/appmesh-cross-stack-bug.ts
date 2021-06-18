@@ -6,16 +6,9 @@ import { InfrastructureStack } from '../lib/infrastructure-stack';
 import { MeshedServiceStack } from '../lib/meshed-service-stack';
 
 const app = new cdk.App();
-const infra = new InfrastructureStack(app, 'InfrastructureStack', {
-    MeshName: "cdkbug",
-    CloudMapNamespace: "cdkbug.local"
-});
 
-const svc = new MeshedServiceStack(app, 'MeshedServiceStack', {
-    vpc: infra.vpc,
-    cluster: infra.cluster,
-    mesh: infra.mesh,
-    serviceName: "echo",
-    serviceImage: ecs.ContainerImage.fromRegistry("hashicorp/http-echo"),
-    containerPort: 5678
-  })
+const infra = new InfrastructureStack(app, 'InfrastructureStack');
+
+const svc = new MeshedServiceStack(app, 'MeshedServiceStack', { mesh: infra.mesh })
+
+svc.addDependency(infra);
